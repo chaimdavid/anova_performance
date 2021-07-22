@@ -1,0 +1,48 @@
+#1.1
+#Creation of a matrix that includes the given data
+gednorm<-as.matrix(read.delim("GeneExpressionDataset_normalized.tsv",header=T,row.names=1))
+
+#Creation of a matrix where the logFC values and the p-values will be stored
+genevalues<-matrix(NA,length(gednorm[,1]),10,dimnames=list(rownames(gednorm),c("logFC(TG)","p-value(TG)","logFC(TherA)","p-value(TherA)","logFC(TherB)","p-value(TherB)","logFC(TherC)","p-value(TherC)","logFC(TherD)","p-value(TherD)")))
+
+#Performance of a for loop for every given gene that creates a dataframe in every run with the 
+#proper settings on which the ANOVA analysis will take place. Then, the needed values are stored
+#to the "genevalues" matrix for each gene
+for(i in 1:length(gednorm[,1])){
+  geneexp<-data.frame(matrix(NA,60,2))
+  colnames(geneexp)<-c("Expression","Condition")
+  geneexp[,2]<-c(rep("WT",10),rep("TG",10),rep("TherA",10),rep("TherB",10),rep("Therc",10),rep("TherD",10))
+  geneexp[,1]<-unlist(unname(gednorm[i,]))
+  fit<-aov(Expression~Condition,data=geneexp)
+  results<-TukeyHSD(fit)
+  genevalues[i,1]<- -(results[[1]][5])
+  genevalues[i,2]<- (results[[1]][50])
+  genevalues[i,3]<- -(results[[1]][9])
+  genevalues[i,4]<- (results[[1]][54])
+  genevalues[i,5]<- -(results[[1]][12])
+  genevalues[i,6]<- (results[[1]][57])
+  genevalues[i,7]<- -(results[[1]][14])
+  genevalues[i,8]<- (results[[1]][59])
+  genevalues[i,9]<- -(results[[1]][15])
+  genevalues[i,10]<- (results[[1]][60])
+}
+head(genevalues)
+
+#Calculation of the amount of differentially expressed genes and creation of a matrix with 
+#the appopriate number of rows
+x=0
+y=1
+for (i in 1:length(genevalues[,1])){
+  if(((abs(genevalues[i,1])>=1)&(genevalues[i,2]<=0.05))|((abs(genevalues[i,3])>=1)&(genevalues[i,4]<=0.05))|((abs(genevalues[i,5])>=1)&(genevalues[i,6]<=0.05))|((abs(genevalues[i,7])>=1)&(genevalues[i,8]<=0.05))|((abs(genevalues[i,9])>=1)&(genevalues[i,10]<=0.05))){
+    x<-x+1
+  }}
+DEG_list<-matrix(NA,x,1)
+#Performance of a for and an if loop that check which genes are differentially expressed
+#(according to the given criteria) and store their names to the "DEG_list" matrix
+for (i in 1:length(genevalues[,1])){
+  if(((abs(genevalues[i,1])>=1)&(genevalues[i,2]<=0.05))|((abs(genevalues[i,3])>=1)&(genevalues[i,4]<=0.05))|((abs(genevalues[i,5])>=1)&(genevalues[i,6]<=0.05))|((abs(genevalues[i,7])>=1)&(genevalues[i,8]<=0.05))|((abs(genevalues[i,9])>=1)&(genevalues[i,10]<=0.05))){
+    DEG_list[y,1]<-rownames(genevalues)[i]
+    y<-y+1
+  }}
+library("openxlsx")
+write.xlsx(DEG_list,"1.DEG_list.xlsx",col.names=F)
